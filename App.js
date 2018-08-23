@@ -1,6 +1,18 @@
 import React, { Component } from 'react';
-import { View, Text, Button, NetInfo, Switch } from 'react-native';
+import { View, Text, Button, NetInfo, Switch, StyleSheet } from 'react-native';
 import SwitchExample from './SwitchUse'
+import * as firebase from 'firebase';
+
+// Initialize Firebase
+
+const firebaseConfig = {
+  apiKey: "your api key here",
+  authDomain: "ondenaufra.firebaseapp.com",
+  databaseURL: "https://ondenaufra.firebaseio.com",
+  storageBucket: "ondenaufra.appspot.com"
+ 
+}
+firebase.initializeApp(firebaseConfig);
 
 class GeolocationExample extends Component {
   constructor(props) {
@@ -17,7 +29,7 @@ class GeolocationExample extends Component {
   }
 
   _onPress() {
-    this.watchId = navigator.geolocation.watchPosition(
+      this.watchId = navigator.geolocation.watchPosition(
       (position) => {
         options = { timeout: 100 }
         this.setState({
@@ -25,24 +37,29 @@ class GeolocationExample extends Component {
           longitude: position.coords.longitude,
           error: null,
         });
-      },
+        firebase.database().ref('motorista/bage').update({
+          latitude : position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+    
+     } ,
       (error) => this.setState({ error: error.message }),
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000, distanceFilter: 10 },
     );
+    
+    
   }
   handleFirstConnectivityChange(isConnected) {
-    console.log('Then, is ' + (isConnected ? 'online' : 'offline'));
+    this.setState({ isAtivo: (isConnected ? true : false) });
   }
   componentDidMount() {
     NetInfo.isConnected.fetch().then(isConnected => {
-      console.log('First, is ' + (isConnected ? 'online' : 'offline'));
       this.setState({ isAtivo: (isConnected ? true : false) })
     });
     NetInfo.isConnected.addEventListener(
       'connectionChange',
       this.handleFirstConnectivityChange
     );
-
   }
   componentWillUnmount() {
     navigator.geolocation.clearWatch(this.watchId);
@@ -63,7 +80,7 @@ class GeolocationExample extends Component {
 
   render() {
     return (
-      <View style={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={style.container}>
         <Text>Latitude: {this.state.latitude}</Text>
         <Text>Longitude: {this.state.longitude}</Text>
         <Text>Status: {this.state.isAtivo ? 'Online' : 'Offline'}</Text>
@@ -88,6 +105,15 @@ class GeolocationExample extends Component {
   }
 
 }
+const style = StyleSheet.create({
+  container: {
+    flex:1,
+    backgroundColor: '#a9a9a9',
+    paddingHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
+})
 
 
 
