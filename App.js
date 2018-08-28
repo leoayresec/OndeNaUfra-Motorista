@@ -1,21 +1,27 @@
-import React, { Component } from "react";
-import { View, Text, NetInfo, Switch, StyleSheet, Image } from "react-native";
-import * as firebase from "firebase";
-import SwitchExample from "./SwitchUse";
-import { Button, Badge } from "react-native-elements";
+import React, {Component} from 'react';
+import * as firebase from 'firebase';
+import {View, Text, NetInfo, StyleSheet, TouchableOpacity} from 'react-native';
+import {Icon} from 'react-native-elements';
+import * as Animatable from 'react-native-animatable';
+import {firebaseKey} from './apikeys';
 // Initialize Firebase
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAHQNHk8ed6VBw4LCcSMTp2ehqtPyic1to",
-  authDomain: "ondenaufra.firebaseapp.com",
-  databaseURL: "https://ondenaufra.firebaseio.com",
-  storageBucket: "ondenaufra.appspot.com"
+  apiKey: firebaseKey,
+  authDomain: 'ondenaufra.firebaseapp.com',
+  databaseURL: 'https://ondenaufra.firebaseio.com',
+  storageBucket: 'ondenaufra.appspot.com',
 };
-firebase.initializeApp(firebaseConfig);
-
+firebase.initializeApp (firebaseConfig);
+const disabledColor = '#e50000';
+const enabledColor = '#00420c';
+const SLIDE_IN_DOWN_KEYFRAMES = {
+  from: {translateX: -150},
+  to: {translateX: 150},
+};
 class GeolocationExample extends Component {
-  constructor(props) {
-    super(props);
+  constructor (props) {
+    super (props);
 
     this.state = {
       latitude: null,
@@ -23,147 +29,166 @@ class GeolocationExample extends Component {
       error: null,
       isAtivo: false,
       isOnline: false,
-      switch1Value: false,
-      switch2Value: false,
-      watchId: null
+      zootec: false,
+      watchId: null,
     };
   }
-  sendToFirebase(latitude, longitude) {
-    firebase
-      .database()
-      .ref("motorista/bage")
-      .update({
-        latitude,
-        longitude
-      });
+  sendToFirebase (latitude, longitude) {
+    firebase.database ().ref ('motorista/bage').update ({
+      latitude,
+      longitude,
+      zootec: this.state.zootec,
+    });
   }
-  _onPress() {
+  _onPress () {
     if (this.state.isAtivo) {
-      const watchId = setInterval(this.getPosition, 5000);
-      this.setState({
+      const watchId = setInterval (this.getPosition, 5000);
+      this.setState ({
         watchId,
-        isAtivo: false
+        isAtivo: false,
       });
     } else {
-      clearInterval(this.state.watchId);
-      this.setState({ isAtivo: true, watchId: null });
+      clearInterval (this.state.watchId);
+      this.setState ({isAtivo: true, watchId: null});
     }
   }
   handleFirstConnectivityChange = isConnected => {
-    this.setState({ isAtivo: isConnected ? true : false });
+    this.setState ({isAtivo: isConnected ? true : false});
   };
   getPosition = () => {
-    navigator.geolocation.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition (
       position => {
-        this.setState({ error: null });
-        this.sendToFirebase(
+        this.setState ({error: null});
+        this.sendToFirebase (
           position.coords.latitude,
           position.coords.longitude
         );
       },
-      error => this.setState({ error: error.message }),
+      error => this.setState ({error: error.message}),
       {
         enableHighAccuracy: false,
         timeout: 2000,
-        maximumAge: 1000
+        maximumAge: 1000,
       }
     );
   };
-  componentDidMount() {
-    NetInfo.isConnected.fetch().then(isConnected => {
-      this.setState({ isOnline: isConnected ? true : false });
+  componentDidMount () {
+    NetInfo.isConnected.fetch ().then (isConnected => {
+      this.setState ({isOnline: isConnected ? true : false});
     });
-    NetInfo.isConnected.addEventListener(
-      "connectionChange",
+    NetInfo.isConnected.addEventListener (
+      'connectionChange',
       this.handleFirstConnectivityChange
     );
   }
-  componentWillUnmount() {
-    NetInfo.isConnected.removeEventListener(
-      "connectionChange",
+  componentWillUnmount () {
+    NetInfo.isConnected.removeEventListener (
+      'connectionChange',
       this.handleFirstConnectivityChange
     );
-    clearInterval(this.watchId);
+    clearInterval (this.watchId);
   }
-
-  toggleSwitch1 = value => {
-    this.setState({ switch1Value: value });
-  };
-  toggleSwitch2 = value => {
-    this.setState({ switch2Value: value });
-  };
-
-  render() {
+  renderBus () {
+    return (
+      <Animatable.View
+        animation={SLIDE_IN_DOWN_KEYFRAMES}
+        iterationCount={Infinity}
+        direction="alternate"
+        duration={3500}
+        easing={'linear'}
+        useNativeDriver={true}
+      >
+        <Icon
+          name="bus-side"
+          type="material-community"
+          color={this.state.isAtivo ? '#98a6b0' : enabledColor}
+          size={80}
+        />
+      </Animatable.View>
+    );
+  }
+  render () {
     return (
       <View style={style.container}>
-        <Badge
-          value={this.state.isAtivo ? "Parado" : "Rodando"}
-          textStyle={{ color: "green" }}
-          containerStyle={{ width: "50%" }}
-        />
-        <Text style={{ fontSize: 22, textAlign: "center" }}>
-          Status: {this.state.isAtivo ? "Parado" : "Rodando"}
-        </Text>
-        <Button
-          large
-          icon={{ name: "bus", type: "font-awesome" }}
-          title="Pilotar o Bagé"
-          onPress={() => this._onPress()}
-          backgroundColor={this.state.isAtivo ? "green" : "red"}
-        />
-        <SwitchUse
-          toggleSwitch1={this.toggleSwitch1}
-          toggleSwitch2={this.toggleSwitch2}
-          switch1Value={this.state.switch1Value}
-          switch2Value={this.state.switch2Value}
-        />
-
-        {this.state.error ? <Text>Error: {this.state.error}</Text> : null}
-        <View
-          style={{
-            width: 25,
-            height: 25,
-            borderRadius: 12.5,
-            backgroundColor: this.state.isOnline ? "green" : "red"
-          }}
-        />
+        <View style={{flex: 2, justifyContent: 'center'}}>
+          {this.renderBus ()}
+          <TouchableOpacity
+            style={{
+              width: 270,
+              height: 100,
+              flexDirection: 'row',
+              backgroundColor: this.state.isAtivo
+                ? enabledColor
+                : disabledColor,
+              alignSelf: 'center',
+              borderRadius: 50,
+              alignItems: 'center',
+              justifyContent: 'space-around',
+              paddingRight: 10,
+            }}
+            onPress={() => this._onPress ()}
+          >
+            <Icon
+              name="bus"
+              type="font-awesome"
+              color={'white'}
+              size={30}
+              onPress={() => this.setState ({zootec: !this.state.zootec})}
+            />
+            <Text
+              style={{
+                color: 'white',
+                fontSize: 30,
+                textAlign: 'left',
+              }}
+            >
+              {this.state.isAtivo ? 'Pilotar o Bagé' : 'Parar de pilotar'}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View
           style={{
             flex: 1,
-            backgroundColor: "#fff",
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: "#000"
+            flexDirection: 'row',
           }}
         >
           <View
             style={{
               flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: "black"
+              alignItems: 'center',
             }}
           >
-            <Image
-              source={require("./assets/zootec.png")}
-              resizeMode={"contain"}
-              style={{ width: "50%", height: "50%" }}
+            <Icon
+              reverse
+              name="swap"
+              type="entypo"
+              color={this.state.zootec ? enabledColor : disabledColor}
+              size={60}
+              onPress={() => this.setState ({zootec: !this.state.zootec})}
             />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text>Sentido Prédio Central</Text>
+            <Text
+              style={{
+                color: 'white',
+                fontSize: 22,
+              }}
+            >
+              {this.state.zootec
+                ? 'Passando por Zootecnia'
+                : 'Não passando por Zootecnia'}
+            </Text>
           </View>
         </View>
       </View>
     );
   }
 }
-const style = StyleSheet.create({
+const style = StyleSheet.create ({
   container: {
     flex: 1,
-    backgroundColor: "#a9a9a9",
+    backgroundColor: '#98a6b0',
     paddingHorizontal: 5,
-    paddingTop: Expo.Constants.statusBarHeight
-  }
+    paddingTop: Expo.Constants.statusBarHeight,
+  },
 });
 
 export default GeolocationExample;
